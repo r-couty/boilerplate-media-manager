@@ -31,7 +31,7 @@ HTML;
         <button class="btn select-image-view"><span class="fa fa-eye"></span></button>
         <button class="btn select-image-delete"><span class="fa fa-times"></span></button>
     </div>
-    <input type="hidden" name="file" value="" data-id="test"/>
+    <input type="hidden" name="file" value="" data-id="test" data-name="hidden-image-selector-value"/>
 </div>
 </div>
 <script>loadStylesheet("",()=>{loadScript("",()=>{window.selectMediaLocales={confirm:"Remove image ?"}})});</script>
@@ -60,7 +60,7 @@ HTML;
         <button class="btn select-image-view"><span class="fa fa-eye"></span></button>
         <button class="btn select-image-delete"><span class="fa fa-times"></span></button>
     </div>
-    <input type="hidden" name="image" value="image.jpg" data-id="test"/>
+    <input type="hidden" name="image" value="image.jpg" data-id="test" data-name="hidden-image-selector-value"/>
 </div>
 </div>
 <script>loadStylesheet("",()=>{loadScript("",()=>{window.selectMediaLocales={confirm:"Remove image ?"}})});</script>
