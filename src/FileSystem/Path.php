@@ -1,6 +1,6 @@
 <?php
 
-namespace Sebastienheyd\BoilerplateMediaManager\Models;
+namespace Sebastienheyd\BoilerplateMediaManager\FileSystem;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;

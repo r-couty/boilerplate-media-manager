@@ -1,6 +1,6 @@
 <?php
 
-namespace Sebastienheyd\BoilerplateMediaManager\Models;
+namespace Sebastienheyd\BoilerplateMediaManager\FileSystem;
 
 use Carbon\Carbon;
 use Storage;

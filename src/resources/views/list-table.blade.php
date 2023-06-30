@@ -1,4 +1,4 @@
-<table class="table table-striped table-sm table-hover" id="media-list" data-path="{{ $content->path() }}">
+<table class="table table-striped table-sm table-hover" id="media-list" data-path="{{$path }}">
     <thead>
     <tr>
         <th style="width:35px">
@@ -15,39 +15,39 @@
     </tr>
     </thead>
     <tbody>
-    @if($parent)
+    @isset($parent)
         <tr class="level-up">
             <td></td>
             <td>
-                <a href="{{ $parent['link'] }}" class="link-folder">
+                <a href="{{ $parent }}" class="link-folder">
                     <span class="fa fa-level-up-alt fa-lg fa-fw media-icon fa-flip-horizontal" ></span> ..
                 </a>
             </td>
             <td>-</td>
             <td>{{ __('boilerplate-media-manager::types.folder') }}</td>
-            <td>{{ $parent['time'] }}</td>
+            <td>{{ /*$parent['time']*/'' }}</td>
             <td></td>
         </tr>
     @endif
     @foreach($list as $k => $item)
-        <tr class="media" data-filename="{{ $item['name'] }}" data-url="{{ $item['url'] }}">
+        <tr class="media" data-filename="{{ $item->name }}" data-url="{{ /* $item['url']*/'' }}">
             <td>
                 <div class="icheck-primary">
-                    <input type="checkbox" name="check[]" value="{{ $item['name'] }}" id="item_{{ $k }}">
+                    <input type="checkbox" name="check[]" value="{{ $item->name }}" id="item_{{ $k }}">
                     <label for="item_{{ $k }}"></label>
                 </div>
             </td>
             <td>
-                @if($item['isDir'])
-                    <a href="{{ $item['link'] }}" class="link-folder">
-                        <span class="far fa-folder fa-lg fa-fw media-icon"></span>&nbsp;{{ $item['name'] }}
+                @if($item->type === 'folder')
+                    <a href="{{(Str::endsWith($path,'/') ? $path : $path . '/') . $item->name/* $item['link'] */}}" class="link-folder">
+                        <span class="far fa-folder fa-lg fa-fw media-icon"></span>&nbsp;{{ $item->name }}
                     </a>
                 @else
-                    <a href="{{ $item['url'] }}" class="link-media" data-filename="{{ $item['name'] }}">
-                    @if($item['type'] === 'image')
-                        <img class="lazy mr-2" data-src="{{ $item['thumb'] }}" alt="{{ $item['name'] }}" style="max-width:26px;max-height:26px"> {{ $item['name'] }}
+                    <a href="{{ /*$item['url']*/'' }}" class="link-media" data-filename="{{ $item->name }}">
+                    @if($item->type === 'image')
+                        <img class="lazy mr-2" data-src="{{ /*$item['thumb']*/'' }}" alt="{{ $item->name }}" style="max-width:26px;max-height:26px"> {{ $item->name }}
                     @else
-                        <span class="far fa-{{ $item['icon'] }} fa-lg fa-fw media-icon"></span>&nbsp;{{ $item['name'] }}
+                        <span class="far fa-{{ config('boilerplate.mediamanager.icons.'. $item->type ) }} fa-lg fa-fw media-icon"></span>&nbsp;{{ $item->name }}
                     @endif
                     </a>
                 @endif

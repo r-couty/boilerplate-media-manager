@@ -9,11 +9,13 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Image;
-use Sebastienheyd\BoilerplateMediaManager\Models\Breadcrumb;
-use Sebastienheyd\BoilerplateMediaManager\Models\Path;
+use Sebastienheyd\BoilerplateMediaManager\FileSystem\Breadcrumb;
+use Sebastienheyd\BoilerplateMediaManager\FileSystem\Path;
+use Sebastienheyd\BoilerplateMediaManager\Models\File;
 use UnexpectedValueException;
 use Validator;
 
@@ -30,20 +32,20 @@ class MediaManagerController extends Controller
     /**
      * Delete file(s) or a folder.
      *
-     * @param  Request  $request
+     * @param Request $request
      * @return JsonResponse|ResponseFactory
      */
     public function delete(Request $request)
     {
         $validation = Validator::make($request->all(), [
-            'path'  => 'required',
+            'path' => 'required',
             'files' => 'required',
         ]);
 
         if ($validation->fails()) {
             return response()->json([
                 'status' => 'error',
-                'error'  => implode(' / ', (array) $validation->errors()),
+                'error' => implode(' / ', (array)$validation->errors()),
             ]);
         }
         $path = new Path($request->input('path'));
@@ -62,7 +64,7 @@ class MediaManagerController extends Controller
     /**
      * Display the media manager.
      *
-     * @param  Request  $request
+     * @param Request $request
      * @return View
      */
     public function index(Request $request)
@@ -89,45 +91,52 @@ class MediaManagerController extends Controller
     /**
      * Display files and directories list.
      *
-     * @param  Request  $request
+     * @param Request $request
      * @return Factory|View
      */
     public function list(Request $request)
     {
         $type = $request->input('type', 'all');
         $display = $request->input('display', 'list');
+        $path = $request->input('path', '/');
+        $parent = $path === '/' ? null : Str::beforeLast($path,'/');
+        $parent = empty($parent) ? '/' : $parent;
 
-        $path = str_replace(route('mediamanager.index', [], false), '', $request->input('path'));
+        //$path = str_replace(route('mediamanager.index', [], false), '', $request->input('path'));
+        /*
+                if (empty($path)) {
+                    $path = '/';
+                }
+        */
+        $level = $path === '/' ? 2 :  (Str::substrCount($path,'/') + 2);
+        $subfolders = File::selectRaw("SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(path, '/', ?),'/',-1),1) AS name,'folder' as type",[$level])
+            ->distinct()
+            ->where('path', 'LIKE', $path . '%')
+            ->whereRaw("SUBSTRING_INDEX(path, '/', ?) != path",[$level])
+            ->orderBy('name')
+            ->get();
 
-        if (empty($path)) {
-            $path = '/';
-        }
+      //  dd($subfolders->toArray());
 
-        $content = new Path($path);
-
-        if (! $content->exists()) {
-            return view('boilerplate-media-manager::error', ['query' => session()->get('queryString')]);
-        }
-
-        if ($request->input('clearcache', 'false') === 'true') {
-            $content->clearCache();
-        }
-
-        $list = $content->ls($type);
-
-        $breadcrumb = new Breadcrumb($path);
-        $parent = $breadcrumb->parent();
-
+        $files = File::selectRaw("SUBSTRING_INDEX(path, '/', -1) AS name, type")
+            ->distinct()
+            ->where('path', 'LIKE', $path . '%')
+            ->whereRaw("SUBSTRING_INDEX(path, '/', ?) = path",[$level])
+            ->orderBy('name')
+            ->get();
+        $list = $subfolders->concat($files);
+        //  $breadcrumb = new Breadcrumb($path);
+        //  $parent = $breadcrumb->parent();
         return view(
             'boilerplate-media-manager::list',
-            compact('content', 'list', 'parent', 'path', 'display', 'breadcrumb')
+            compact( 'parent','list', 'path', 'display')
         );
     }
 
     /**
      * Display the media manager for MCE.
      *
-     * @param  Request  $request
+     * @param Request $request
      * @return View
      */
     public function mce(Request $request)
@@ -137,15 +146,15 @@ class MediaManagerController extends Controller
         if ($selected = $request->input('selected')) {
             $baseUrl = config('boilerplate.mediamanager.base_url', '/');
             $pInfo = pathinfo($selected);
-            $path = preg_replace('#^'.$baseUrl.'#', '', $pInfo['dirname']);
+            $path = preg_replace('#^' . $baseUrl . '#', '', $pInfo['dirname']);
         }
 
         $data = [
-            'type'        => $request->input('type', 'all'),
-            'path'        => $path ?? '/',
-            'field'       => $request->input('field'),
+            'type' => $request->input('type', 'all'),
+            'path' => $path ?? '/',
+            'field' => $request->input('field'),
             'return_type' => $request->input('return_type'),
-            'selected'    => $selected,
+            'selected' => $selected,
         ];
 
         return view('boilerplate-media-manager::index-mce', $data);
@@ -154,7 +163,7 @@ class MediaManagerController extends Controller
     /**
      * Add a new folder.
      *
-     * @param  Request  $request
+     * @param Request $request
      * @return JsonResponse|ResponseFactory
      */
     public function newFolder(Request $request)
@@ -168,21 +177,21 @@ class MediaManagerController extends Controller
     /**
      * Paste file(s) into the given path.
      *
-     * @param  Request  $request
+     * @param Request $request
      * @return JsonResponse|ResponseFactory
      */
     public function paste(Request $request)
     {
         $validation = Validator::make($request->all(), [
-            'from'        => 'required',
-            'files'       => 'required',
+            'from' => 'required',
+            'files' => 'required',
             'destination' => 'required',
         ]);
 
         if ($validation->fails()) {
             return response()->json([
                 'status' => 'error',
-                'error'  => implode(' / ', (array) $validation->errors()),
+                'error' => implode(' / ', (array)$validation->errors()),
             ]);
         }
 
@@ -202,20 +211,20 @@ class MediaManagerController extends Controller
     /**
      * Delete a file or a folder.
      *
-     * @param  Request  $request
+     * @param Request $request
      * @return JsonResponse
      */
     public function rename(Request $request)
     {
-        if (! $request->isXmlHttpRequest()) {
+        if (!$request->isXmlHttpRequest()) {
             abort(403);
         }
 
         $validator = Validator::make($request->post(), [
-            'path'     => 'required',
-            'type'     => ['required', Rule::in(['folder', 'file'])],
+            'path' => 'required',
+            'type' => ['required', Rule::in(['folder', 'file'])],
             'fileName' => 'required',
-            'newName'  => 'required',
+            'newName' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -235,7 +244,7 @@ class MediaManagerController extends Controller
     /**
      * Upload file(s) to server.
      *
-     * @param  Request  $request
+     * @param Request $request
      * @return JsonResponse|ResponseFactory
      *
      * @throws Exception
@@ -255,7 +264,7 @@ class MediaManagerController extends Controller
         if ($validation->fails()) {
             return response()->json([
                 'status' => 'error',
-                'error'  => $validation->errors()->first('file'),
+                'error' => $validation->errors()->first('file'),
             ]);
         }
 
@@ -264,7 +273,7 @@ class MediaManagerController extends Controller
         try {
             $file = $request->file('file');
 
-            if (! $file instanceof UploadedFile) {
+            if (!$file instanceof UploadedFile) {
                 throw new UnexpectedValueException('File is not instance of UploadedFile');
             }
 
@@ -274,7 +283,7 @@ class MediaManagerController extends Controller
 
             if (in_array(strtolower($file->getClientOriginalExtension()), $ext)) {
                 $fInfo = pathinfo($fullPath);
-                Image::make($fullPath)->fit(150)->save($fInfo['dirname'].'/thumb_'.$file->getClientOriginalName(), 75);
+                Image::make($fullPath)->fit(150)->save($fInfo['dirname'] . '/thumb_' . $file->getClientOriginalName(), 75);
             }
 
             $path->clearCache();

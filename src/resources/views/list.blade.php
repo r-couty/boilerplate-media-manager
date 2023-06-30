@@ -42,9 +42,7 @@
     <div class="card-body pt-0">
         <ol id="media-breadcrumb" class="breadcrumb mb-3 py-2">
             <li><a href="{{ route('mediamanager.index', [], false) }}"><i class="fa fa-home"></i></a></li>
-            @foreach($breadcrumb->items() as $dir)
-                <li><a href="{{ route('mediamanager.index', ['path' => $dir['path']], false) }}">{{ $dir['name'] }}</a></li>
-            @endforeach
+
         </ol>
         <div id="progress" class="progress mb-3" style="display: none">
             <div class="progress-bar"></div>

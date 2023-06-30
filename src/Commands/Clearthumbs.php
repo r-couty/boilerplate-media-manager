@@ -5,7 +5,7 @@ namespace Sebastienheyd\BoilerplateMediaManager\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
-use Sebastienheyd\BoilerplateMediaManager\Models\Path;
+use Sebastienheyd\BoilerplateMediaManager\FileSystem\Path;
 
 class Clearthumbs extends Command
 {
